@@ -23,34 +23,10 @@ namespace xmlBlackboardParser
         private static void parseXML2()
         {
 
-                    string xmldoc =
-    @"<?xml version='1.0'?>
-<catalog>
-  <book id='bk101'>
-    <author>Steve Jin</author>
-    <title>VMware VI and vSphere SDK</title>
-    <genre>Computer</genre>
-    <price>59.99</price>
-    <publish_date>2009-09-01</publish_date>
-    <description>
-      An in-depth introduction on VMware vSphere SDK and open source vijava API.
-    </description>
-  </book>
-  <book id='bk102'>
-    <author>Steve Jin</author>
-    <title>TBD</title>
-    <genre>Computer</genre>
-    <price>59.99</price>
-    <publish_date>2015-09-01</publish_date>
-    <description>
-      An in-depth introduction on something.
-    </description>
- </book>
-</catalog>";
 
             XmlDocument doc = new XmlDocument();
-            //doc.Load(@"c:\users\steve\documents\books.xml");
-            doc.LoadXml(xmldoc);
+            doc.Load(@"C:\Users\farid.ANL\Documents\visual studio 2013\Projects\xmlBlackboardParser\xmlBlackboardParser\doc.xml");
+            //doc.LoadXml(xmldoc);
 
 
 
