@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -75,11 +76,7 @@ namespace xmlBlackboardParser
 
 
 
-
-
-
-
-                //prototype to get //prototype to get correct Answer
+                // get correct Answer
 
                 int correctNoteIndex = GetCorrectOptionNodeIndex(resprocessing);
                 string correctOptionID = "";
@@ -91,71 +88,61 @@ namespace xmlBlackboardParser
                     correctResponseID = GetCorrectResponseID(resprocessing.Item(correctNoteIndex));
 
                 }
+
+                qitem.answerID = correctResponseID;
                 
 
                 
-
-
-
-                string a = "a";
-
-
-
-
-
-
-
+                //get OPTIONS looping and store in Arraylist in object
+                //RES
+                int y = 0;
+                foreach (XmlNode o in RES)
+                {
+                    QuestionOption qo = new QuestionOption();
+                    y++;
+                    qo.optionID = o.SelectSingleNode("response_label").Attributes["ident"].Value.ToString();
+                    qo.optionText = o.SelectSingleNode("response_label/flow_mat/material/mat_extension").InnerText;
+                    qo.OptionNumber = y;
+                    qitem.options.Add(qo);
+                }
 
 
 
                 //QUESTION
                 qitem.questiontype = itemmetadata.Item(0).SelectSingleNode("bbmd_questiontype").InnerText;
                 qitem.question = QN.Item(0).SelectSingleNode("mat_formattedtext").InnerText;
-                
-                //OPTION 1
-                x++; // init for option 1
-                qitem.option1.optionText = RES.Item(0).SelectSingleNode("response_label/flow_mat/material/mat_extension").InnerText;
-                qitem.option1.optionID = RES.Item(0).SelectSingleNode("response_label").Attributes["ident"].Value.ToString();
-                qitem.option1.OptionNumber = x;
-                
-                //OPTION 2
-                x++;
-                qitem.option2.optionText = RES.Item(1).SelectSingleNode("response_label/flow_mat/material/mat_extension").InnerText;
-                qitem.option2.optionID = RES.Item(1).SelectSingleNode("response_label").Attributes["ident"].Value.ToString();
-                qitem.option2.OptionNumber = x;
-                
-                //OPTION 3
-                x++;
-                qitem.option3.optionText = RES.Item(2).SelectSingleNode("response_label/flow_mat/material/mat_extension").InnerText;
-                qitem.option3.optionID = RES.Item(2).SelectSingleNode("response_label").Attributes["ident"].Value.ToString();
-                qitem.option3.OptionNumber = x;
-
-                //OPTION 4
-                x++;
-                qitem.option4.optionText = RES.Item(3).SelectSingleNode("response_label/flow_mat/material/mat_extension").InnerText;
-                qitem.option4.optionID = RES.Item(3).SelectSingleNode("response_label").Attributes["ident"].Value.ToString();
-                qitem.option4.OptionNumber = x;
+              
 
                 qItems.Add(qitem);
             }
 
+            DisplayResponses(qItems);
+           
+        }
 
+        private static void DisplayResponses(List<questionItem> qItems)
+        {
             //out content of question to screen
             foreach (questionItem a in qItems)
             {
-                Console.WriteLine(a.questiontype
-                    + Environment.NewLine + "Q:" + a.question
-                    + Environment.NewLine + a.option1.OptionNumber + "." + "OPTIONID (" + a.option1.optionID + ") " + a.option1.optionText 
-                    + Environment.NewLine + a.option2.OptionNumber + "." + "OPTIONID (" + a.option2.optionID + ") " + a.option2.optionText 
-                    + Environment.NewLine + a.option3.OptionNumber + "." + "OPTIONID (" + a.option3.optionID + ") " + a.option3.optionText 
-                    + Environment.NewLine + a.option4.OptionNumber + "." + "OPTIONID (" + a.option4.optionID + ") " + a.option4.optionText 
-                    );
-                Console.WriteLine();
+                Console.WriteLine(Environment.NewLine + Environment.NewLine + a.questiontype + Environment.NewLine + "Q:" + a.question);
+                Console.WriteLine("ANS ID: " + a.answerID);
+        
+                    foreach(QuestionOption qo in a.options)
+                    {
+                        //qo.OptionNumber
+                        Console.WriteLine(Environment.NewLine +
+                            qo.OptionNumber + ". Op#: '" + qo.optionID + "'"
+                            + Environment.NewLine + "OP:" + qo.optionText);
+                    }
+
             }
 
             // this si here so when run console it will not end till i press any key
             Console.ReadLine();
         }
+
+
 
         private static string GetCorrectResponseID(XmlNode _xmlNode)
         {
@@ -208,15 +195,20 @@ namespace xmlBlackboardParser
     {
         public string questiontype { get; set; } //MCQ, MRQ, TNF, NUM
         public string question { get; set; }
+        public ArrayList options = new ArrayList(); //proto
         public QuestionOption option1;
         public QuestionOption option2;
         public QuestionOption option3;
         public QuestionOption option4;
         public string answer { get; set; } // format of 1, 2, 3..etc for MRQ its '1;3'
+        public string answerID { get; set; } // BB answerID
         public string correctFeedback { get; set; }
         public string wrongFeedback { get; set; }
 
     }
+
+
+
 
     class QuestionOption
     {
