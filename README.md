@@ -1,5 +1,5 @@
 # XMLblackboardParser
-to parse blackboard quiz xml exported data and extract the base data (question, options, correct answer) 
+A simple C# console program to parse blackboard exported quiz file (which is in xml format), it exported relevant data and saves as a Tab Seperated Text file (that can be open in excel) or and Imported to Wizlearn's LMS
 
 ## About Version1  Branch
 Completed all outstanding task,now code
