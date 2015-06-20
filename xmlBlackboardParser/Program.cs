@@ -19,41 +19,41 @@ namespace xmlBlackboardParser
     {
 
 
-
-
         static void Main(string[] args)
         {
-            //parseXML();
-            //            parseXML2();
-            parseXML3();
+
+            OutProgramASCIIArt();
+            parseXML();
         }
 
 
-        private static void parseXML3()
+        private static void parseXML()
         {
-
             // load the XML file
             XmlDocument doc = new XmlDocument();
-            doc.Load(@"C:\Users\farid.ANL\Documents\visual studio 2013\Projects\xmlBlackboardParser\xmlBlackboardParser\doc2.xml");
-            int x; //option No
+            string path = @"./";
+            //doc.Load(path + "doc2.xml");
+            try
+            {
+                doc.Load(path + "res00001.dat");
+            }
+            catch
+            {
+                OutputToScreenPause("File not found. Pls Ensure a file named 'res00001.dat' exist in the same loc of this program.");
+            }
+            
 
             //go straight to the node where questions are located.
             XmlNodeList nodes = doc.DocumentElement.SelectNodes("/questestinterop/assessment/section/item");
 
-            //create obj to store questions
+            //create LIST of obj to store questions
             List<questionItem> qItems = new List<questionItem>();
 
             //for each question found add its content to questionItem object
             foreach (XmlNode node in nodes)
             {
-                x = 0; 
-
                 //need to init all objects before we  start using them
                 questionItem qitem = new questionItem();
-                qitem.option1 = new QuestionOption();
-                qitem.option2 = new QuestionOption();
-                qitem.option3 = new QuestionOption();
-                qitem.option4 = new QuestionOption();
 
                 //for each questions
                 XmlNodeList itemmetadata = node.SelectNodes("itemmetadata");
@@ -76,57 +76,126 @@ namespace xmlBlackboardParser
 
 
 
-                // get correct Answer
+            // PARSING PART
 
+                //Question
+                qitem.questiontype = itemmetadata.Item(0).SelectSingleNode("bbmd_questiontype").InnerText;
+                qitem.question = QN.Item(0).SelectSingleNode("mat_formattedtext").InnerText;
+
+
+                //Correct Answer 
                 int correctNoteIndex = GetCorrectOptionNodeIndex(resprocessing);
-                string correctOptionID = "";
-                string correctResponseID = "";
                 if (correctNoteIndex != -1)
                 {
-                    correctOptionID = resprocessing.Item(correctNoteIndex).Attributes["title"].Value.ToString();
-                    //get the ID
-                    correctResponseID = GetCorrectResponseID(resprocessing.Item(correctNoteIndex));
-
+                    qitem.answerID = GetCorrectResponseID(resprocessing.Item(correctNoteIndex));
                 }
 
-                qitem.answerID = correctResponseID;
                 
-
-                
-                //get OPTIONS looping and store in Arraylist in object
-                //RES
+                //Options 
+                //  looping and store in Arraylist in object
                 int y = 0;
                 foreach (XmlNode o in RES)
                 {
                     QuestionOption qo = new QuestionOption();
                     y++;
                     qo.optionID = o.SelectSingleNode("response_label").Attributes["ident"].Value.ToString();
-                    qo.optionText = o.SelectSingleNode("response_label/flow_mat/material/mat_extension").InnerText;
+                    
+                    
+
+                    if (qitem.questiontype == "Multiple Choice")
+                    {
+                        qo.optionText = o.SelectSingleNode("response_label/flow_mat/material/mat_extension/mat_formattedtext").InnerText; //changed here
+                    }
+                    else if (qitem.questiontype == "True/False")
+                    {
+                        qo.optionText = o.SelectSingleNode("response_label/flow_mat/material/mattext").InnerText;
+                    }
+
                     qo.OptionNumber = y;
                     qitem.options.Add(qo);
                 }
 
+                //gets the correct answer number
+                qitem.answer = GetAnswerNumber(qitem);
 
-
-                //QUESTION
-                qitem.questiontype = itemmetadata.Item(0).SelectSingleNode("bbmd_questiontype").InnerText;
-                qitem.question = QN.Item(0).SelectSingleNode("mat_formattedtext").InnerText;
-              
-
+                //Add to List
                 qItems.Add(qitem);
             }
 
-            DisplayResponses(qItems);
+
+            //DisplayResponses(qItems);
+            DisplayResponsesCSV(qItems, path);
+
+
            
+        
+
+
         }
 
+        //Functions section
+
+        public static void OutProgramASCIIArt()
+        {
+            string output = @"
+  ____  _            _    _                         _            
+ |  _ \| |          | |  | |                       | |           
+ | |_) | | __ _  ___| | _| |__   ___   __ _ _ __ __| |           
+ |  _ <| |/ _` |/ __| |/ / '_ \ / _ \ / _` | '__/ _` |           
+ | |_) | | (_| | (__|   <| |_) | (_) | (_| | | | (_| |           
+ |____/|_|\__,_|\___|_|\_\_.__/ \___/ \__,_|_|  \__,_|           
+   ____        _       ______                       _            
+  / __ \      (_)     |  ____|                     | |           
+ | |  | |_   _ _ ____ | |__  __  ___ __   ___  _ __| |_ ___ _ __ 
+ | |  | | | | | |_  / |  __| \ \/ / '_ \ / _ \| '__| __/ _ \ '__|
+ | |__| | |_| | |/ /  | |____ >  <| |_) | (_) | |  | ||  __/ |   
+  \___\_\\__,_|_/___| |______/_/\_\ .__/ \___/|_|   \__\___|_|   
+                                  | |                            
+                                  |_|         
+";
+            Console.WriteLine(output + "\n");
+
+
+        }
+
+        private static void OutputToScreenPause(string msg)
+        {
+            Console.WriteLine(msg + "\nPress any key to exit");
+            Console.ReadLine();
+        }
+
+        /// <summary>
+        /// BB XML does not indicate which option number is the correct answer, this function will return the number
+        /// that this code has already tagged to each option.
+        /// </summary>
+        /// <param name="qitem"></param>
+        /// <returns></returns>
+        private static string GetAnswerNumber(questionItem qitem)
+        {
+            foreach (QuestionOption qo in qitem.options)
+            {
+                if (qo.optionID == qitem.answerID)
+                {
+                    return qo.OptionNumber.ToString();
+                }
+            }
+            return "0";
+        }
+
+
+
+
+        /// <summary>
+        /// Output response to screen
+        /// </summary>
+        /// <param name="qItems"></param>
         private static void DisplayResponses(List<questionItem> qItems)
         {
             //out content of question to screen
             foreach (questionItem a in qItems)
             {
                 Console.WriteLine(Environment.NewLine + Environment.NewLine + a.questiontype + Environment.NewLine + "Q:" + a.question);
-                Console.WriteLine("ANS ID: " + a.answerID);
+                Console.WriteLine("ANS ID: " + a.answerID + ". Answer No." + a.answer);
         
                     foreach(QuestionOption qo in a.options)
                     {
@@ -138,15 +207,110 @@ namespace xmlBlackboardParser
 
             }
 
-            // this si here so when run console it will not end till i press any key
-            Console.ReadLine();
+            // this is here so when run console it will not end till i press any key
+            //Console.ReadLine();
+        }
+
+    private static void DisplayResponsesCSV(List<questionItem> qItems, string path)
+        {
+            string text = "";
+            text += "Question\tOption 1\tOption 2\tOption 3\tOption 4\tOption 5\tOption 6\tOption 7\tOption 8\tOption 9\tType\tAnswer" + Environment.NewLine;
+            
+            foreach (questionItem qi in qItems)
+            {
+                text += qi.question + tab(1);
+                
+                //+tab(10) 
+                //loop options
+                foreach (QuestionOption qo in qi.options)
+                {
+                    text += qo.optionText + tab(1);
+                }
+
+                text += tab(9 - qi.options.Count); // as option support is up to 9, hence this auto add the options that not used as blank
+                
+                text += RenameQuestionType(qi.questiontype) + tab(1) + qi.answer + Environment.NewLine;
+            }
+
+            try { 
+                    System.IO.File.WriteAllText("./" + "questionExported.txt", text);
+                    OutputToScreenPause("Export Done, open this file in excel 'questionExported.txt'.");
+                }
+            catch
+                {
+                    OutputToScreenPause("Cant Export the question, ensure this file 'questionExported.txt' is not open and try again.");
+                }
+
+
+        }
+
+    private static string RenameQuestionType(string questiontype)
+    {
+        
+        if (questiontype == "Multiple Choice")
+        {
+            return "MCQ";
+        }
+        else if  (questiontype == "True/False")
+        {
+            return "TNF";
+        }
+        else
+        {
+            return "NONE";
+        }
+    }
+
+        private static string tab(int no)
+        {
+            string retVal = "";
+            for(int i=0; i < no; i++)
+            {
+                retVal += "\t";
+            }
+            return retVal;
         }
 
 
+       private static void WriteToFileSample()
+    {
+        FileStream ostrm;
+        StreamWriter writer;
+        TextWriter oldOut = Console.Out;
+        try
+        {
+            ostrm = new FileStream("./Redirect.txt", FileMode.OpenOrCreate, FileAccess.Write);
+            writer = new StreamWriter(ostrm);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Cannot open Redirect.txt for writing");
+            Console.WriteLine(e.Message);
+            return;
+        }
+        Console.SetOut(writer);
+        Console.WriteLine("This is a line of text");
+        Console.WriteLine("Everything written to Console.Write() or");
+        Console.WriteLine("Console.WriteLine() will be written to a file");
+        Console.SetOut(oldOut);
+        writer.Close();
+        ostrm.Close();
+        Console.WriteLine("Done");
 
+    }
+
+
+        /// <summary>
+        /// returns the correct responseID from the passed XMLNode
+        /// </summary>
+        /// <param name="_xmlNode"></param>
+        /// <returns></returns>
         private static string GetCorrectResponseID(XmlNode _xmlNode)
         {
-            return _xmlNode.SelectSingleNode("conditionvar/varequal").InnerText;
+            if (!string.IsNullOrEmpty(_xmlNode.SelectSingleNode("conditionvar/varequal").InnerText))
+                return _xmlNode.SelectSingleNode("conditionvar/varequal").InnerText;
+            else
+                return "";
         }
 
 
@@ -180,10 +344,36 @@ namespace xmlBlackboardParser
                 }
                 catch (NullReferenceException)
                 {
-                    //the option does not title, hence do nothing
-                    return -1;
+                    //the option does not title, hence check child node that 'displayfeedback linkrefid="correct"'
+                    return GetCorrectOptionBydisplayfeedback(resprocessing);
                 }
 
+            }
+
+            return -1;
+        }
+
+
+        private static int GetCorrectOptionBydisplayfeedback(XmlNodeList resprocessing)
+        {
+            int counter = -1;
+
+            foreach (XmlNode n in resprocessing)
+            {
+                counter++;
+                try
+                {
+                    if (n["displayfeedback"].Attributes["linkrefid"].Value == "correct")
+                    {
+                        return counter;
+                    }
+                }
+                catch (NullReferenceException)
+                {
+                    //no action
+                    return -1;
+                }
+                 
             }
 
             return -1;
@@ -196,18 +386,12 @@ namespace xmlBlackboardParser
         public string questiontype { get; set; } //MCQ, MRQ, TNF, NUM
         public string question { get; set; }
         public ArrayList options = new ArrayList(); //proto
-        public QuestionOption option1;
-        public QuestionOption option2;
-        public QuestionOption option3;
-        public QuestionOption option4;
         public string answer { get; set; } // format of 1, 2, 3..etc for MRQ its '1;3'
         public string answerID { get; set; } // BB answerID
         public string correctFeedback { get; set; }
         public string wrongFeedback { get; set; }
 
     }
-
-
 
 
     class QuestionOption
