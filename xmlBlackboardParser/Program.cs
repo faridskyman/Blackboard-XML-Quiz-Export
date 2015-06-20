@@ -36,11 +36,7 @@ namespace xmlBlackboardParser
             try
             {
                 doc.Load(path + "res00001.dat");
-            }
-            catch
-            {
-                OutputToScreenPause("File not found. Pls Ensure a file named 'res00001.dat' exist in the same loc of this program.");
-            }
+          
             
 
             //go straight to the node where questions are located.
@@ -126,7 +122,11 @@ namespace xmlBlackboardParser
             //DisplayResponses(qItems);
             DisplayResponsesCSV(qItems, path);
 
-
+            }
+            catch
+            {
+                OutputToScreenPause("File not found. Pls Ensure a file named 'res00001.dat' exist in the same loc of this program.");
+            }
            
         
 
