@@ -76,14 +76,26 @@ namespace xmlBlackboardParser
 
                 //Question
                 qitem.questiontype = itemmetadata.Item(0).SelectSingleNode("bbmd_questiontype").InnerText;
-                qitem.question = QN.Item(0).SelectSingleNode("mat_formattedtext").InnerText;
+                qitem.question = CleanData(QN.Item(0).SelectSingleNode("mat_formattedtext").InnerText);
 
 
-                //Correct Answer 
-                int correctNoteIndex = GetCorrectOptionNodeIndex(resprocessing);
-                if (correctNoteIndex != -1)
+                //unsupported qn
+                bool isUnsupportedQuestion = false;
+                if (qitem.questiontype == "Multiple Answer")
                 {
-                    qitem.answerID = GetCorrectResponseID(resprocessing.Item(correctNoteIndex));
+                    isUnsupportedQuestion = true;
+                }
+
+
+                if (!isUnsupportedQuestion)
+                {
+
+                    //Correct Answer 
+                    int correctNoteIndex = GetCorrectOptionNodeIndex(resprocessing);
+                    if (correctNoteIndex != -1)
+                    {
+                        qitem.answerID = CleanData(GetCorrectResponseID(resprocessing.Item(correctNoteIndex)));
+                    }
                 }
 
                 
@@ -100,11 +112,11 @@ namespace xmlBlackboardParser
 
                     if (qitem.questiontype == "Multiple Choice")
                     {
-                        qo.optionText = o.SelectSingleNode("response_label/flow_mat/material/mat_extension/mat_formattedtext").InnerText; //changed here
+                        qo.optionText = CleanData(o.SelectSingleNode("response_label/flow_mat/material/mat_extension/mat_formattedtext").InnerText); //changed here
                     }
                     else if (qitem.questiontype == "True/False")
                     {
-                        qo.optionText = o.SelectSingleNode("response_label/flow_mat/material/mattext").InnerText;
+                        qo.optionText = CleanData(o.SelectSingleNode("response_label/flow_mat/material/mattext").InnerText);
                     }
 
                     qo.OptionNumber = y;
@@ -112,7 +124,12 @@ namespace xmlBlackboardParser
                 }
 
                 //gets the correct answer number
-                qitem.answer = GetAnswerNumber(qitem);
+                //21-7 (the engine do not support multiple answer as yet) so this quick fix will skip
+                //  getting answer (if its a 'Multiple Answer')
+                if (!isUnsupportedQuestion)
+                {
+                    qitem.answer = CleanData(GetAnswerNumber(qitem));
+                }
 
                 //Add to List
                 qItems.Add(qitem);
@@ -123,14 +140,29 @@ namespace xmlBlackboardParser
             DisplayResponsesCSV(qItems, path);
 
             }
-            catch
+            catch (Exception ex)
             {
                 OutputToScreenPause("File not found. Pls Ensure a file named 'res00001.dat' exist in the same loc of this program.");
+                OutputToScreenPause(ex.ToString());
             }
            
         
 
 
+        }
+
+        /// <summary>
+        /// this will remove CR and LF
+        /// </summary>
+        /// <param name="p"></param>
+        /// <returns></returns>
+        private static string CleanData(string p)
+        {
+            string retStr = p.Replace(Environment.NewLine, "");
+            retStr = retStr.Trim();
+
+            return retStr;
+            
         }
 
         //Functions section
