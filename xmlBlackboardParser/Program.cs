@@ -18,12 +18,20 @@ namespace xmlBlackboardParser
     class Program
     {
 
+        //v0.1 only supported MCQ and TF
+        //0.1.1 fixes issue when MRQ existed and does a by pass
+        //0.2 support MRQ, and output file as UTF8 and removes non standard HTML tag '<o:p>'
+        
+        public static string appversionNo = "0.2";
+
+
+
 
 
         static void Main(string[] args)
         {
 
-            OutProgramASCIIArt();
+            OutProgramASCIIArt(appversionNo);
             parseXML();
         }
 
@@ -184,7 +192,7 @@ namespace xmlBlackboardParser
 
         //Functions section
 
-        public static void OutProgramASCIIArt()
+        public static void OutProgramASCIIArt(string appversion)
         {
             string output = @"
   ____  _            _    _                         _            
@@ -201,7 +209,7 @@ namespace xmlBlackboardParser
   \___\_\\__,_|_/___| |______/_/\_\ .__/ \___/|_|   \__\___|_|   
                                   | |                            
                                   |_|         
-";
+" + Environment.NewLine + "v" + appversion +  " (EIT) 2015";
             Console.WriteLine(output + "\n");
 
 
