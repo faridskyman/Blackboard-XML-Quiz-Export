@@ -1,0 +1,41 @@
+﻿Response for MCQ
+
+
+ <respcondition title="correct">
+            <conditionvar>
+              <varequal respident="response" case="No">
+              591dad26c41145b4abaa5b1865add61c</varequal>
+            </conditionvar>
+            <setvar variablename="SCORE" action="Set">
+            SCORE.max</setvar>
+            <displayfeedback linkrefid="correct"
+            feedbacktype="Response" />
+          </respcondition>
+
+
+Response for MRQ
+
+          <respcondition title="correct">
+            <conditionvar>
+              <and>
+                <not>
+                  <varequal respident="response" case="No">
+                  9742e1faeeca4703a416fb52cd23a92c</varequal>
+                </not>
+                <not>
+                  <varequal respident="response" case="No">
+                  fb3aed3de6ec47768ca08fd2510da58e</varequal>
+                </not>
+                <varequal respident="response" case="No">
+                fd39ece625a143eb9b5896b934c6bc6c</varequal>
+                <not>
+                  <varequal respident="response" case="No">
+                  0e8469dd273c4ab198b3012309d0275a</varequal>
+                </not>
+              </and>
+            </conditionvar>
+            <setvar variablename="SCORE" action="Set">
+            SCORE.max</setvar>
+            <displayfeedback linkrefid="correct"
+            feedbacktype="Response" />
+          </respcondition>

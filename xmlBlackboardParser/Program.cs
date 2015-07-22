@@ -19,6 +19,7 @@ namespace xmlBlackboardParser
     {
 
 
+
         static void Main(string[] args)
         {
 
@@ -31,11 +32,15 @@ namespace xmlBlackboardParser
         {
             // load the XML file
             XmlDocument doc = new XmlDocument();
+            doc.CreateXmlDeclaration("1.0", "utf-8", null);
+
             string path = @"./";
             //doc.Load(path + "doc2.xml");
             try
             {
                 doc.Load(path + "res00001.dat");
+                //doc.LoadXml(path + "res00001.dat"); //this cause Errr
+
           
             
 
@@ -79,11 +84,16 @@ namespace xmlBlackboardParser
                 qitem.question = CleanData(QN.Item(0).SelectSingleNode("mat_formattedtext").InnerText);
 
 
+                ConstantValue cv = new ConstantValue();
+
+
                 //unsupported qn
                 bool isUnsupportedQuestion = false;
-                if (qitem.questiontype == "Multiple Answer")
+                if (qitem.questiontype == cv.MultipleAnswer.ID)
                 {
                     isUnsupportedQuestion = true;
+
+                    
                 }
 
 
@@ -94,7 +104,9 @@ namespace xmlBlackboardParser
                     int correctNoteIndex = GetCorrectOptionNodeIndex(resprocessing);
                     if (correctNoteIndex != -1)
                     {
-                        qitem.answerID = CleanData(GetCorrectResponseID(resprocessing.Item(correctNoteIndex)));
+                        qitem.answerID = CleanData(GetCorrectResponseID(
+                            resprocessing.Item(correctNoteIndex), 
+                            qitem.questiontype));
                     }
                 }
 
@@ -107,14 +119,14 @@ namespace xmlBlackboardParser
                     QuestionOption qo = new QuestionOption();
                     y++;
                     qo.optionID = o.SelectSingleNode("response_label").Attributes["ident"].Value.ToString();
-                    
-                    
 
-                    if (qitem.questiontype == "Multiple Choice")
+
+
+                    if (qitem.questiontype == cv.MultipleChoice.Name || qitem.questiontype == cv.MultipleAnswer.Name)
                     {
                         qo.optionText = CleanData(o.SelectSingleNode("response_label/flow_mat/material/mat_extension/mat_formattedtext").InnerText); //changed here
                     }
-                    else if (qitem.questiontype == "True/False")
+                    else if (qitem.questiontype == cv.True_False.Name)
                     {
                         qo.optionText = CleanData(o.SelectSingleNode("response_label/flow_mat/material/mattext").InnerText);
                     }
@@ -128,7 +140,7 @@ namespace xmlBlackboardParser
                 //  getting answer (if its a 'Multiple Answer')
                 if (!isUnsupportedQuestion)
                 {
-                    qitem.answer = CleanData(GetAnswerNumber(qitem));
+                    qitem.answer = CleanData(GetAnswerNumberMain(qitem, qitem.questiontype));
                 }
 
                 //Add to List
@@ -158,8 +170,13 @@ namespace xmlBlackboardParser
         /// <returns></returns>
         private static string CleanData(string p)
         {
-            string retStr = p.Replace(Environment.NewLine, "");
+            string retStr = p.Normalize();
+            retStr = p.Replace(Environment.NewLine, "");
+            retStr = retStr.Replace("<o:p>", "");
+            retStr = retStr.Replace("</o:p>", "");
+            retStr = retStr.Replace("&#194;", string.Empty);
             retStr = retStr.Trim();
+            
 
             return retStr;
             
@@ -214,6 +231,39 @@ namespace xmlBlackboardParser
             return "0";
         }
 
+        /// <summary>
+        /// to support MRQ, this function was created
+        /// if question if MCQ or TF, then this woudl call the previous function 'GetAnswerNumber'
+        /// durectly, if MRQ then it will loop through all correct answer Identifier and get the answer and return as a 
+        /// string with semi colon as delimiter (e.g. A;B;C)
+        /// </summary>
+        /// <param name="qitem"></param>
+        /// <param name="questionType"></param>
+        /// <returns></returns>
+        private static string GetAnswerNumberMain(questionItem qitem, string questionType)
+        {
+            ConstantValue cv = new ConstantValue();
+            List<String> answerList;
+            string retstr = "";
+            if(questionType != cv.MultipleAnswer.Name)
+            {
+                return GetAnswerNumber(qitem);
+            }
+            else
+            {
+                answerList = qitem.answerID.Split(';').ToList();
+                foreach (string s in answerList)
+                {
+                    if (!string.IsNullOrEmpty(s))
+                    {
+                        qitem.answerID = s;
+                        retstr += GetAnswerNumber(qitem) + ";";
+                    }
+                }
+                return retstr;
+            }
+        }
+
 
 
 
@@ -265,7 +315,7 @@ namespace xmlBlackboardParser
             }
 
             try { 
-                    System.IO.File.WriteAllText("./" + "questionExported.txt", text);
+                    System.IO.File.WriteAllText("./" + "questionExported.txt", text,Encoding.UTF8);
                     OutputToScreenPause("Export Done, open this file in excel 'questionExported.txt'.");
                 }
             catch
@@ -278,14 +328,19 @@ namespace xmlBlackboardParser
 
     private static string RenameQuestionType(string questiontype)
     {
+        ConstantValue Constants = new ConstantValue();
         
-        if (questiontype == "Multiple Choice")
+        if (questiontype == Constants.MultipleChoice.Name)
         {
-            return "MCQ";
+            return Constants.MultipleChoice.ID;
         }
-        else if  (questiontype == "True/False")
+        else if  (questiontype == Constants.True_False.Name)
         {
-            return "TNF";
+            return Constants.True_False.ID;
+        }
+        else if (questiontype == Constants.MultipleAnswer.Name)
+        {
+            return Constants.MultipleAnswer.ID;
         }
         else
         {
@@ -337,14 +392,43 @@ namespace xmlBlackboardParser
         /// </summary>
         /// <param name="_xmlNode"></param>
         /// <returns></returns>
-        private static string GetCorrectResponseID(XmlNode _xmlNode)
-        {
-            if (!string.IsNullOrEmpty(_xmlNode.SelectSingleNode("conditionvar/varequal").InnerText))
-                return _xmlNode.SelectSingleNode("conditionvar/varequal").InnerText;
-            else
-                return "";
-        }
+       private static string GetCorrectResponseID(XmlNode _xmlNode, string questionType)
+       {
+           ConstantValue cv = new ConstantValue();
+           XmlNodeList nodes;
+           string response = "";
+           if (questionType != cv.MultipleAnswer.Name)
+           {
+               if (!string.IsNullOrEmpty(_xmlNode.SelectSingleNode("conditionvar/varequal").InnerText))
+                   return _xmlNode.SelectSingleNode("conditionvar/varequal").InnerText;
+               else
+                   return "";
 
+           }
+           else
+           {
+               if (!string.IsNullOrEmpty(_xmlNode.SelectSingleNode("conditionvar/and/not").InnerText))
+               {
+                   //nodes = _xmlNode.SelectNodes("conditionvar/and/not");
+                   nodes = _xmlNode.SelectNodes("conditionvar/and");
+
+                   foreach (XmlNode node in nodes)
+                   {
+                       response += CleanData(node.SelectSingleNode("varequal").InnerText) + ";";
+                   }
+
+                   return response;
+
+               }
+               else
+               {
+                   return "";
+               }
+
+
+           }
+       }
+        
 
         /// <summary>
         /// the BB Quiz XML 'resprocessing' node is passed here
