@@ -11,9 +11,9 @@ Completed all outstanding task,now code
 * Handles the variance in correct option for blackboard that initially caused error
 * Added ASCII ART at start
 * Handle exception where input file is misisng
-* Handles exception if otput file is in use.
+* Handles exception if oUtput file is in use.
 * Handles file path to be where the program is located instead of hard coded.
 
 ## Limitations
-* MAX option supported is 9. 
+* MAX option supported is 9 (for questions). 
 
